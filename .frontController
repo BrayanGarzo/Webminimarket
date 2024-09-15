@@ -1,0 +1,72 @@
+<?php
+
+
+class frontController
+{
+    private $action;
+    private $params;
+    public function proccessRequest()
+    {
+       
+       if (isset($_REQUEST["url"])) {
+        $myUrl = explode("/", trim($_REQUEST["url"]));
+        $view=array_shift($myUrl);
+        //Validar que llegue api o web
+        if($view != "api" && $view != "web")
+         showError("Peticion Invalida", true);
+        if($view =="api")
+        {
+         define("CALL_API",true); // me llamo para el API
+        }
+        else
+        {
+            define("CALL_API",false); // me llamo web
+        }
+        $complemento = $myUrl;
+
+        if(count($complemento) == 0)
+        showError("Peticion Invalida", true);
+
+        $this->action = array_shift($myUrl);
+        $this->params = $myUrl;
+        $result = $this->dispatcher($this->action, $this->params);
+        /*
+        if($result["result"] == "fail")
+        {
+            $result["view"] = "defaultError";
+        }
+        */
+        if (CALL_API)
+        print_r(json_encode($result));
+        else     //Es un llaamado para interface web
+        View::render($result);
+
+       }else{
+        print_r("Invalid Action :(");
+       }
+    }
+
+    public function dispatcher($action, $params)
+    {
+     $filename = ACTIONS . $action . ".class.php";
+
+     //print_r($filename);
+
+     if(is_file($filename)){
+        require_once $filename;
+        if(!class_exists($action)) {
+            echo "clase no existe";
+        } else // si existe
+        {
+            $cmd = new $action();
+           return $cmd->execute($params);
+        }
+
+
+     }else
+     //die ("<br> archivo no existe");
+     showError("<br> archivo no existe", true);
+
+    }
+    
+}
